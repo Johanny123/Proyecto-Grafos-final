@@ -34,7 +34,6 @@
 </div>
 
 <script>
-    // Definir nodos representativos en y cerca de Bucaramanga y Girón
     const nodos = [
         {id: 'Bucaramanga Centro', x: 100, y: 150},
         {id: 'Belén', x: 160, y: 130},
@@ -43,8 +42,7 @@
         {id: 'Cañaveral', x: 340, y: 150},
         {id: 'Girón Centro', x: 450, y: 220},
     ];
-
-    // Aristas con distancias aproximadas en km
+    
     const aristas = [
         {from: 'Bucaramanga Centro', to: 'Belén', weight: 5},
         {from: 'Belén', to: 'Cabecera', weight: 6},
@@ -55,7 +53,6 @@
         {from: 'Cabecera', to: 'Cañaveral', weight: 9},
     ];
 
-    // Construir grafo
     let graph = {};
     nodos.forEach(n => { graph[n.id] = []; });
     aristas.forEach(e => {
@@ -63,7 +60,6 @@
         graph[e.to].push({node: e.from, weight: e.weight});
     });
 
-    // Llenar selects de nodos
     const startSelect = document.getElementById('start');
     const endSelect = document.getElementById('end');
     nodos.forEach(n => {
@@ -73,7 +69,6 @@
     startSelect.value = 'Bucaramanga Centro';
     endSelect.value = 'Girón Centro';
 
-    // Dibujar grafo en SVG
     const svg = document.getElementById('svgGraph');
 
     function dibujarGrafo(destacados = []) {
@@ -117,7 +112,7 @@
         });
     }
 
-    // Algoritmo Dijkstra
+
     function dijkstra(graph, start, end) {
         const distances = {};
         const prev = {};
@@ -186,10 +181,10 @@
         }
     }
 
-    // Dibujo inicial
     dibujarGrafo();
 
 </script>
 
 </body>
+
 </html>
