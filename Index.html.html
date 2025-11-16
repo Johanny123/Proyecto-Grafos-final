@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ruta Bucaramanga - Girón (Grafo)</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        #graph { margin: 20px 0; }
+        svg { border: 1px solid #ccc; background: #f9f9f9; }
+        .node { fill: lightblue; stroke: #333; stroke-width: 1.5px; cursor: pointer; }
+        .edge { stroke: grey; stroke-width: 2px; }
+        .highlight { stroke: red; stroke-width: 4px; }
+        text { font-size: 14px; pointer-events: none;}
+    </style>
+</head>
+<body>
+
+<h2>Ruta más corta desde Bucaramanga a Girón</h2>
+
+<p>Seleccione el nodo de origen y destino para calcular la ruta más corta.</p>
+
+<label for="start">Nodo Origen:</label>
+<select id="start"></select>
+
+<label for="end">Nodo Destino:</label>
+<select id="end"></select>
+
+<button onclick="calcularRuta()">Calcular Ruta</button>
+
+<div id="resultado" style="margin-top:20px;"></div>
+
+<div id="graph">
+    <svg width="600" height="400" id="svgGraph"></svg>
+</div>
+
+<script>
+    // Definir nodos representativos en y cerca de Bucaramanga y Girón
+    const nodos = [
+        {id: 'Bucaramanga Centro', x: 100, y: 150},
+        {id: 'Belén', x: 160, y: 130},
+        {id: 'Cabecera', x: 220, y: 110},
+        {id: 'Floridablanca', x: 280, y: 170},
+        {id: 'Cañaveral', x: 340, y: 150},
+        {id: 'Girón Centro', x: 450, y: 220},
+    ];
+
+    // Aristas con distancias aproximadas en km
+    const aristas = [
+        {from: 'Bucaramanga Centro', to: 'Belén', weight: 5},
+        {from: 'Belén', to: 'Cabecera', weight: 6},
+        {from: 'Cabecera', to: 'Floridablanca', weight: 7},
+        {from: 'Floridablanca', to: 'Cañaveral', weight: 8},
+        {from: 'Cañaveral', to: 'Girón Centro', weight: 12},
+        {from: 'Belén', to: 'Cañaveral', weight: 10},
+        {from: 'Cabecera', to: 'Cañaveral', weight: 9},
+    ];
+
+    // Construir grafo
+    let graph = {};
+    nodos.forEach(n => { graph[n.id] = []; });
+    aristas.forEach(e => {
+        graph[e.from].push({node: e.to, weight: e.weight});
+        graph[e.to].push({node: e.from, weight: e.weight});
+    });
+
+    // Llenar selects de nodos
+    const startSelect = document.getElementById('start');
+    const endSelect = document.getElementById('end');
+    nodos.forEach(n => {
+        startSelect.options.add(new Option(n.id, n.id));
+        endSelect.options.add(new Option(n.id, n.id));
+    });
+    startSelect.value = 'Bucaramanga Centro';
+    endSelect.value = 'Girón Centro';
+
+    // Dibujar grafo en SVG
+    const svg = document.getElementById('svgGraph');
+
+    function dibujarGrafo(destacados = []) {
+        svg.innerHTML = '';
+        aristas.forEach(edge => {
+            const fromNode = nodos.find(n => n.id === edge.from);
+            const toNode = nodos.find(n => n.id === edge.to);
+            const line = document.createElementNS("http://www.w3.org/2000/svg", 'line');
+            line.setAttribute('x1', fromNode.x);
+            line.setAttribute('y1', fromNode.y);
+            line.setAttribute('x2', toNode.x);
+            line.setAttribute('y2', toNode.y);
+
+            let isHighlighted = destacados.some(
+                d => (d[0] === edge.from && d[1] === edge.to) || (d[1] === edge.from && d[0] === edge.to)
+            );
+            line.setAttribute('class', isHighlighted ? 'edge highlight' : 'edge');
+            svg.appendChild(line);
+
+            const text = document.createElementNS("http://www.w3.org/2000/svg", 'text');
+            text.setAttribute('x', (fromNode.x + toNode.x) / 2);
+            text.setAttribute('y', (fromNode.y + toNode.y) / 2 - 5);
+            text.textContent = edge.weight + ' km';
+            svg.appendChild(text);
+        });
+
+        nodos.forEach(n => {
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", 'circle');
+            circle.setAttribute('cx', n.x);
+            circle.setAttribute('cy', n.y);
+            circle.setAttribute('r', 20);
+            circle.setAttribute('class', 'node');
+            svg.appendChild(circle);
+
+            const label = document.createElementNS("http://www.w3.org/2000/svg", 'text');
+            label.setAttribute('x', n.x);
+            label.setAttribute('y', n.y + 5);
+            label.setAttribute('text-anchor', 'middle');
+            label.textContent = n.id;
+            svg.appendChild(label);
+        });
+    }
+
+    // Algoritmo Dijkstra
+    function dijkstra(graph, start, end) {
+        const distances = {};
+        const prev = {};
+        const nodes = new Set(Object.keys(graph));
+
+        nodes.forEach(node => {
+            distances[node] = Infinity;
+            prev[node] = null;
+        });
+        distances[start] = 0;
+
+        while (nodes.size > 0) {
+            let minNode = null;
+            nodes.forEach(node => {
+                if (minNode === null || distances[node] < distances[minNode]) {
+                    minNode = node;
+                }
+            });
+
+            if (distances[minNode] === Infinity) break;
+            if (minNode === end) break;
+
+            nodes.delete(minNode);
+
+            graph[minNode].forEach(neighbor => {
+                const alt = distances[minNode] + neighbor.weight;
+                if (alt < distances[neighbor.node]) {
+                    distances[neighbor.node] = alt;
+                    prev[neighbor.node] = minNode;
+                }
+            });
+        }
+
+        let ruta = [];
+        let actual = end;
+        while (actual) {
+            ruta.unshift(actual);
+            actual = prev[actual];
+        }
+        if (ruta[0] !== start) ruta = [];
+
+        return { ruta, distancia: distances[end] };
+    }
+
+    function calcularRuta() {
+        const start = startSelect.value;
+        const end = endSelect.value;
+        if (start === end) {
+            alert("El nodo origen y destino deben ser diferentes.");
+            return;
+        }
+        const { ruta, distancia } = dijkstra(graph, start, end);
+        const resultadoDiv = document.getElementById('resultado');
+
+        if (ruta.length === 0) {
+            resultadoDiv.textContent = `No hay ruta disponible desde ${start} hasta ${end}.`;
+            dibujarGrafo();
+        } else {
+            resultadoDiv.textContent = `Ruta más corta de ${start} a ${end}: ${ruta.join(' → ')} (Distancia total: ${distancia.toFixed(1)} km)`;
+
+            let aristasRuta = [];
+            for (let i = 0; i < ruta.length -1; i++) {
+                aristasRuta.push([ruta[i], ruta[i+1]]);
+            }
+            dibujarGrafo(aristasRuta);
+        }
+    }
+
+    // Dibujo inicial
+    dibujarGrafo();
+
+</script>
+
+</body>
+</html>
